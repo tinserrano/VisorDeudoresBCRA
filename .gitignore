@@ -1,0 +1,21 @@
+# Entorno virtual
+venv_streamlit/
+venv/
+env/
+.env/
+
+# Archivos de caché de Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Archivos de distribución
+dist/
+build/
+*.egg-info/
+
+# Archivos locales
+.DS_Store
+.idea/
+.vscode/
