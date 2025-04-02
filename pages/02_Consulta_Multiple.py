@@ -122,7 +122,6 @@ def obtener_color_fila(fila):
         return colors.HexColor('#90EE90')  # Light Green suave
     
 
-
 def generar_informe_pdf(df_resultados):
     """
     Genera un informe PDF a partir de los resultados de la consulta de CUITs
@@ -147,12 +146,12 @@ def generar_informe_pdf(df_resultados):
     fecha_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
     nombre_archivo = f"VisorDeudoresBCRA_Informe_{fecha_actual}.pdf"
     
-    # Definir tamaño de página y márgenes
+    # Definir tamaño de página y márgenes - AJUSTADOS
     pagesize = landscape(letter)
-    left_margin = 15 * mm  # Reducir márgenes
-    right_margin = 15 * mm
-    top_margin = 15 * mm
-    bottom_margin = 15 * mm
+    left_margin = 20 * mm  # Aumentado para dar más espacio
+    right_margin = 20 * mm  # Aumentado para dar más espacio
+    top_margin = 20 * mm  # Aumentado para dar más espacio
+    bottom_margin = 20 * mm  # Aumentado para dar más espacio
     
     # Crear el documento PDF con márgenes personalizados
     doc = SimpleDocTemplate(
@@ -204,44 +203,97 @@ def generar_informe_pdf(df_resultados):
     # Título del informe - Cambiado para incluir VisorDeudoresBCRA
     elementos.append(Paragraph("VisorDeudoresBCRA - Informe de Deudores", estilo_titulo))
     elementos.append(Paragraph(f"Fecha de Emisión: {datetime.now().strftime('%d/%m/%Y %H:%M')}", estilo_normal))
-    elementos.append(Spacer(1, 6))
+    elementos.append(Spacer(1, 10))  # Aumentado el espacio
     
-    # Calcular ancho de columnas
+    # Calcular ancho de columnas - MODIFICADO PARA AJUSTAR MEJOR A LOS MÁRGENES
     ancho_pagina = pagesize[0] - left_margin - right_margin
+    
+    # Proporciones más equilibradas
     anchos_columnas = [
-        0.12 * ancho_pagina,  # CUIT
-        0.25 * ancho_pagina,  # Denominación
+        0.13 * ancho_pagina,  # CUIT
+        0.22 * ancho_pagina,  # Denominación
         0.18 * ancho_pagina,  # Situación Actual
         0.15 * ancho_pagina,  # Situación Irregular Actual
-        0.15 * ancho_pagina,  # Situación Histórica
-        0.15 * ancho_pagina   # Cheques Rechazados
+        0.16 * ancho_pagina,  # Situación Histórica
+        0.16 * ancho_pagina   # Cheques Rechazados
     ]
     
-    # Convertir datos de texto a párrafos
-    datos_tabla = [columnas_resumen]  # Encabezados
+    # Verificar que la suma sea exactamente el ancho disponible
+    suma_anchos = sum(anchos_columnas)
+    if suma_anchos < ancho_pagina:
+        # Ajustar la última columna para compensar diferencias por redondeo
+        anchos_columnas[-1] += (ancho_pagina - suma_anchos)
+    
+    # Convertir datos de texto a párrafos - MEJORADO PARA MANEJAR CELDAS LARGAS
+    datos_tabla = []
+    
+    # Primero agregamos los encabezados
+    encabezados = []
+    for col in columnas_resumen:
+        parrafo = Paragraph(col, ParagraphStyle(
+            'Encabezado',
+            parent=estilo_celda,
+            fontName=fuente_bold,
+            fontSize=9,
+            alignment=TA_CENTER,
+            textColor='white'
+        ))
+        encabezados.append(parrafo)
+    datos_tabla.append(encabezados)
+    
+    # Luego agregamos las filas
     for index, fila in df_resultados[columnas_resumen].iterrows():
         fila_parrafos = []
-        for valor in fila:
-            parrafo = Paragraph(str(valor), estilo_celda)
+        for i, valor in enumerate(fila):
+            # Adaptamos el estilo según la columna
+            estilo_actual = ParagraphStyle(
+                f'Celda_{i}',
+                parent=estilo_celda,
+                fontSize=8,
+                leading=10,
+                # Centra algunos campos específicos
+                alignment=TA_CENTER if i >= 2 else TA_LEFT,  
+            )
+            
+            # Aseguramos que no hay valores None
+            texto = str(valor) if valor is not None else ""
+            
+            # Limitar longitud para evitar desbordamientos
+            if i == 1 and len(texto) > 40:  # Para la denominación
+                texto = texto[:37] + "..."
+                
+            parrafo = Paragraph(texto, estilo_actual)
             fila_parrafos.append(parrafo)
         datos_tabla.append(fila_parrafos)
     
-    # Crear tabla con anchos de columna personalizados
-    tabla = Table(datos_tabla, colWidths=anchos_columnas, repeatRows=1)
+    # Crear tabla con anchos de columna personalizados y espaciado
+    tabla = Table(
+        datos_tabla, 
+        colWidths=anchos_columnas, 
+        repeatRows=1,
+        rowHeights=None,  # Altura automática
+        hAlign='CENTER'  # Centrar la tabla en la página
+    )
     
-    # Estilo de la tabla
+    # Estilo de la tabla - MEJORADO
     estilo_tabla = TableStyle([
         # Estilo para el encabezado
         ('BACKGROUND', (0,0), (-1,0), colors.grey),
         ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
-        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('ALIGN', (0,0), (-1,0), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('FONTNAME', (0,0), (-1,0), fuente_bold),
-        ('FONTSIZE', (0,0), (-1,0), 10),
+        ('FONTSIZE', (0,0), (-1,0), 9),
         
         # Bordes
         ('GRID', (0,0), (-1,-1), 0.5, colors.black),
         ('BOX', (0,0), (-1,-1), 1, colors.black),
+        
+        # Padding para todas las celdas
+        ('TOPPADDING', (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
+        ('LEFTPADDING', (0,0), (-1,-1), 3),
+        ('RIGHTPADDING', (0,0), (-1,-1), 3),
     ])
     
     # Agregar color de fondo condicional para cada fila
@@ -255,39 +307,51 @@ def generar_informe_pdf(df_resultados):
     tabla.setStyle(estilo_tabla)
     
     elementos.append(tabla)
-    elementos.append(Spacer(1, 6))
+    elementos.append(Spacer(1, 10))  # Aumentado el espacio
     
     # Sección de CUITs con Cheques Rechazados
     cuits_con_cheques = df_resultados[df_resultados['Tiene Cheques Rechazados'] == 'Sí']
     if not cuits_con_cheques.empty:
         elementos.append(Paragraph("Clientes con Cheques Rechazados:", estilo_normal))
-        cheques_texto = "\n".join([
-            f"CUIT: {row['CUIT']} - {row['Denominación']}" 
-            for _, row in cuits_con_cheques.iterrows()
-        ])
-        elementos.append(Paragraph(cheques_texto, estilo_normal))
-        elementos.append(Spacer(1, 6))
+        # Crear una lista en vez de párrafo largo
+        cheques_items = []
+        for _, row in cuits_con_cheques.iterrows():
+            item_text = f"• CUIT: {row['CUIT']} - {row['Denominación']}"
+            cheques_items.append(Paragraph(item_text, estilo_normal))
+        
+        for item in cheques_items:
+            elementos.append(item)
+            elementos.append(Spacer(1, 2))
+        
+        elementos.append(Spacer(1, 10))
     
     # Sección de CUITs con Situación Irregular
     cuits_con_situacion_irregular = df_resultados[df_resultados['Tiene Situación Irregular'] == 'Sí']
     if not cuits_con_situacion_irregular.empty:
         elementos.append(Paragraph("Clientes con Situación Irregular:", estilo_normal))
-        irregular_texto = "\n".join([
-            f"CUIT: {row['CUIT']} - {row['Denominación']}" 
-            for _, row in cuits_con_situacion_irregular.iterrows()
-        ])
-        elementos.append(Paragraph(irregular_texto, estilo_normal))
+        # Crear una lista en vez de párrafo largo
+        irregular_items = []
+        for _, row in cuits_con_situacion_irregular.iterrows():
+            item_text = f"• CUIT: {row['CUIT']} - {row['Denominación']}"
+            irregular_items.append(Paragraph(item_text, estilo_normal))
+        
+        for item in irregular_items:
+            elementos.append(item)
+            elementos.append(Spacer(1, 2))
     
     # Agregar pie de página con hipervínculo a LinkedIn
     linkedin_url = "https://www.linkedin.com/in/martinepenas/"
     pie_pagina = crear_pie_pagina(fuente_regular, linkedin_url)
-    elementos.append(Spacer(1, 10))
+    elementos.append(Spacer(1, 15))
     elementos.append(pie_pagina)
     
     # Construir el PDF
     doc.build(elementos)
     
     return nombre_archivo
+
+
+
 
 
 def crear_pie_pagina(fuente_regular, linkedin_url):
