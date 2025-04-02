@@ -4,7 +4,7 @@
 
 
 ## Descripción
-VisorDeudoresBCRA es una aplicación web desarrollada con Streamlit que permite consultar información de deudores registrados en el Banco Central de la República Argentina (BCRA). La aplicación facilita el análisis de situaciones crediticias, deudas históricas y cheques rechazados, tanto para consultas individuales como múltiples.
+    VisorDeudoresBCRA es una aplicación web desarrollada con Streamlit que permite consultar información de deudores registrados en el Banco Central de la República Argentina (BCRA). La aplicación facilita el análisis de situaciones crediticias, deudas históricas y cheques rechazados, tanto para consultas individuales como múltiples.
 
 ## Características principales
 - Consulta Individual: Análisis detallado de un CUIT/CUIL/CDI específico
