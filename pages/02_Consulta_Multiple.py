@@ -123,7 +123,6 @@ def obtener_color_fila(fila):
     
 
 
-
 def generar_informe_pdf(df_resultados):
     """
     Genera un informe PDF a partir de los resultados de la consulta de CUITs
@@ -202,27 +201,10 @@ def generar_informe_pdf(df_resultados):
     # Elementos del PDF
     elementos = []
     
-    # Título del informe
+    # Título del informe - Cambiado para incluir VisorDeudoresBCRA
     elementos.append(Paragraph("VisorDeudoresBCRA - Informe de Deudores", estilo_titulo))
     elementos.append(Paragraph(f"Fecha de Emisión: {datetime.now().strftime('%d/%m/%Y %H:%M')}", estilo_normal))
     elementos.append(Spacer(1, 6))
-    
-    # Convertir datos de texto a párrafos
-    datos_tabla = [columnas_resumen]  # Encabezados
-    for index, fila in df_resultados[columnas_resumen].iterrows():
-        fila_parrafos = []
-        for valor in fila:
-            parrafo = Paragraph(str(valor), estilo_celda)
-            fila_parrafos.append(parrafo)
-        datos_tabla.append(fila_parrafos)
-
-    
-    pie_pagina = crear_pie_pagina(fuente_regular, 'https://www.linkedin.com/in/martinepenas/')
-    elementos.append(pie_pagina)
-    
-    # Construir el PDF
-    doc.build(elementos)
-
     
     # Calcular ancho de columnas
     ancho_pagina = pagesize[0] - left_margin - right_margin
@@ -234,6 +216,15 @@ def generar_informe_pdf(df_resultados):
         0.15 * ancho_pagina,  # Situación Histórica
         0.15 * ancho_pagina   # Cheques Rechazados
     ]
+    
+    # Convertir datos de texto a párrafos
+    datos_tabla = [columnas_resumen]  # Encabezados
+    for index, fila in df_resultados[columnas_resumen].iterrows():
+        fila_parrafos = []
+        for valor in fila:
+            parrafo = Paragraph(str(valor), estilo_celda)
+            fila_parrafos.append(parrafo)
+        datos_tabla.append(fila_parrafos)
     
     # Crear tabla con anchos de columna personalizados
     tabla = Table(datos_tabla, colWidths=anchos_columnas, repeatRows=1)
@@ -287,14 +278,45 @@ def generar_informe_pdf(df_resultados):
         ])
         elementos.append(Paragraph(irregular_texto, estilo_normal))
     
+    # Agregar pie de página con hipervínculo a LinkedIn
+    linkedin_url = "https://www.linkedin.com/in/martinepenas/"
+    pie_pagina = crear_pie_pagina(fuente_regular, linkedin_url)
+    elementos.append(Spacer(1, 10))
+    elementos.append(pie_pagina)
+    
     # Construir el PDF
     doc.build(elementos)
     
     return nombre_archivo
+
+
+def crear_pie_pagina(fuente_regular, linkedin_url):
+    """
+    Crea un pie de página con información de contacto e hipervínculo
+    """
+    estilos = getSampleStyleSheet()
+    
+    estilo_pie = ParagraphStyle(
+        'PiePagina',
+        parent=estilos['Normal'],
+        fontName=fuente_regular,
+        fontSize=8,
+        alignment=TA_CENTER,
+        textColor=colors.gray
+    )
+    
+    # Usar una etiqueta <link> para crear un hipervínculo
+    pie_texto = (
+        f"Información extraida de BCRA | "
+        f"<link href='{linkedin_url}'>Conecta con el que te simplifico la tarea en LinkedIn</link>"
+    )
+    
+    return Paragraph(pie_texto, estilo_pie)
     
 
 
 # Función para mostrar resultados con manejo de estado
+
 def mostrar_resultados_multiple_cuits(df_resultados):
     """
     Muestra los resultados del análisis de múltiples CUITs de forma visual
